@@ -230,14 +230,32 @@
 
 <script>
 (function () {
+  var lastHeight = 0;
+
   function sendHeight() {
     var h = document.body.scrollHeight || document.documentElement.scrollHeight;
+    if (h === lastHeight) return;
+    lastHeight = h;
+
     if (window.parent && window.parent !== window) {
       window.parent.postMessage({ type: 'quizHeight', height: h }, '*');
     }
   }
-  window.addEventListener('load', sendHeight);
-  window.addEventListener('resize', sendHeight);
+
+  // Initial height once everything is rendered
+  window.addEventListener('load', function () {
+    setTimeout(sendHeight, 200);
+  });
+
+  // Update height when content inside changes (final score, messages, etc.)
+  if (window.MutationObserver) {
+    var obs = new MutationObserver(function () {
+      clearTimeout(window.__quizHeightTimer);
+      window.__quizHeightTimer = setTimeout(sendHeight, 100);
+    });
+    obs.observe(document.body, { childList: true, subtree: true, attributes: true });
+  }
 })();
 </script>
+
 
